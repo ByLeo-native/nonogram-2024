@@ -6,17 +6,36 @@ body {
   font-family: sans-serif;
   margin: 20px;
   padding: 0;
+  background-color: #f5f5f5; /* Light background for better contrast */
+  width: 95%; /* Set container width relative to the viewport */
+  max-width: 600px; /* Limit container width for better responsiveness */
+  margin: 20px auto; /* Add margin and auto-centering */
+  padding: 20px;
+  background-color: #fff; /* Light background for the container */
+  border-radius: 10px; /* Rounded corners for a more modern look */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .square {
-  background: #fff;
-  border: 1px solid #999;
+  background-color: #fff;
+  border: 1px solid #ddd;
   font-size: 24px;
   font-weight: bold;
-  margin-right: -1px;
-  margin-top: -1px;
-  padding: 0;
   text-align: center;
+  padding: 5px; /* Adjust padding for better spacing */
+  cursor: pointer; /* Indicate clickable squares for user interaction */
+  animation: square-appear 0.2s ease-in-out forwards;
+}
+
+@keyframes square-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95); /* Subtle zoom-in effect */
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .square-painted {
@@ -25,6 +44,11 @@ body {
 
 .board {
   display: grid;
+  grid-gap: 2px; /* Spacing between squares */
+  border: 1px solid #ddd; /* Light border for the board */
+  border-radius: 4px; /* Rounded corners for a more modern look */
+  animation: board-appear 0.5s ease-in-out forwards;
+  margin: auto;
 }
 
 .horizontal {
@@ -38,10 +62,33 @@ body {
 
 .rowClues {
   display: grid;
+  grid-auto-rows: min-content; /* Adjust row heights to fit clue content */
+  gap: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px; /* Add some padding for better separation */
+  animation: clues-appear 0.5s ease-in-out forwards;
 }
 
 .colClues {
   display: grid;
+  grid-auto-rows: min-content; /* Adjust row heights to fit clue content */
+  gap: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px; /* Add some padding for better separation */
+  animation: clues-appear 0.5s ease-in-out forwards;
+}
+
+@keyframes clues-appear {
+  from {
+    opacity: 0;
+    transform: translateX(-10px); /* Slide in from the left */
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .clue {
@@ -64,7 +111,10 @@ body {
 
 .game {
   display: flex;
-  flex-direction: row;
+  flex-direction: column; /* Stack board and clues vertically */
+  align-items: center;
+  width: 100%; /* Board takes full width */
+  margin: 20px 0;
 }
 
 .game-info {
@@ -82,6 +132,12 @@ body {
 
 .toggle-switch-container {
   position: relative; /* Necessary for absolute positioning of toggle-switch */
+  width: 50px;
+  height: 24px;
+  background-color: #ccc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .toggle-switch {
