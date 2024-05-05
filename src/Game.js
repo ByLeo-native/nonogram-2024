@@ -13,10 +13,7 @@ function Game() {
   const [colsClues, setColsClues] = useState(null);
   const [waiting, setWaiting] = useState(false);
   const [gameState, setGameState] = useState(false);
-  const [cellCount, setCellCount] = useState(null);
-  const [rowsCompleted, setRowsCompleted] = useState(null);
-  const [colsCompleted, setColsCompleted] = useState(null);
-
+  
   const handleToggle = (isChecked) => {
     console.log(`Nuevo estado ${isChecked ? 'X': '#'}`)
     setGameState(isChecked);
@@ -41,30 +38,6 @@ function Game() {
     });
   }
 
-  function countCellsToPaint() {
-    if (waiting) {
-      return;
-    }
-    const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
-    const rowsCluesS = JSON.stringify(rowsClues);
-    const colsCluesS = JSON.stringify(colsClues);
-    const queryS = `count_cells_to_paint(${rowsCluesS}, ${colsCluesS}, ${squaresS}, CellCount)`; // queryS = count_cells_to_paint([3], [1,2], [4], [5], [5], CellCount)
-    console.log(`${queryS}`);
-    console.log(`rowsCluesS: ${rowsCluesS}`);
-    console.log(`colsCluesS: ${colsCluesS}`);
-    console.log(`squaresS: ${squaresS}`);
-    setWaiting(true);
-    pengine.query(queryS, (success, response) => {
-      if (success) {
-        console.log(`Entro`);
-        setCellCount(response['CellCount']);
-        // Update UI or perform other actions based on the cellCount value
-        console.log(`Cells to paint: ${cellCount}`);
-      }
-      setWaiting(false);
-});
-  }
-
   function handleClick(i, j) {
     // No action on click if we are waiting.
     if (waiting) {
@@ -81,10 +54,6 @@ function Game() {
     pengine.query(queryS, (success, response) => {
       if (success) {
         setGrid(response['ResGrid']);
-        const FilaSastifecha = response['RowSat'] == '1';
-        const ColumnaSastifecha = response['ColSat'] == '1';
-        console.log(response);
-        console.log(`${FilaSastifecha}  y ${ColumnaSastifecha}`);
       }
       setWaiting(false);
     });
