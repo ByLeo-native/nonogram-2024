@@ -1,10 +1,10 @@
 :- module(proylcc,
-	[  
-		put/8,
-    grid_solved/3
-	]).
+    [  
+        put/8,
+        solve/4
+    ]).
 
-:-use_module(library(lists)).
+:- use_module(library(lists)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -35,119 +35,99 @@ put(Content, [RowN, ColN], RowsClues, ColsClues, Grid, NewGrid, RowSat, ColSat):
 	(replace(Cell, ColN, _, Row, NewRow),
 	Cell == Content
 		;
-	replace(_Cell, ColN, Content, Row, NewRow)),
-
-    
-    % Verificar si la fila modificada cumple con las restricciones
-    check_line(NewRow, RowsClues),
-    (check_line(NewRow, RowsClues) ->
-        RowSat = 1
-    ;
-        RowSat = 0
-    ),
-
-    % Transponer la grilla para verificar las columnas
-    transpose(NewGrid, TransposedGrid),
-    
-    % Verificar si la columna modificada cumple con las restricciones
-    nth1(ColN, TransposedGrid, ModifiedCol),
-    check_line(ModifiedCol, ColsClues),
-    (check_line(ModifiedCol, ColsClues) ->
-        ColSat = 1
-    ;
-        ColSat = 0
+	replace(_Cell, ColN, Content, Row, NewRow),
+    check_position(NewGrid, [RowN,ColN], RowsClues, ColsClues, RowSat, ColSat)
     ).
 
 
-%
-% Nonogram solving algorithm
-%
+check_position(Grid, [RowN, ColN], RowsClues, ColsClues, RowSat, ColSat) :-
+    % Obtener la fila y columna especificadas
+    nth0(RowN, Grid, Row),
+    nth0(RowN, RowsClues, RowNClues), 
 
-/**
- * solve(+Lines:list, +Constrs:list) is nondet.
- *
- * Solves the nonogram given through the lines and their constraints.
- * Uses an optimized algorithm that solves lines with few possibilities first.
- */
-solve(Lines, Constrs) :-
-    pack(Lines, Constrs, Pack),
-    sort(Pack, SortedPack),
-    solve(SortedPack).
+    % Verificar si se cumplen las restricciones en fila
+    check_line(Row, RowNClues, RowSat),
 
-solve([]).
-solve([line(_, Line, Constr)|Rest]) :-
-    check_line(Line, Constr),
-    solve(Rest).
-
-/**
- * pack(+Lines:list, +Constrs:list, -Result:list) is det.
- *
- * Packs a line and its constraints into a single term and adds the number of
- * possible line solutions given the line's length and constraints as the term's
- * first argument to enable sorting.
- */
-pack([], [], []).
-pack([Line|Lines], [Constr|Constrs], [line(Count, Line, Constr)|Result]) :-
-    length(Line, LineLength),
-    length(CheckLine, LineLength),
-    findall(CheckLine, check_line(CheckLine, Constr), NCheckLine),
-    length(NCheckLine, Count),
-    pack(Lines, Constrs, Result).
-
-/**
- * check_line(+Line:list ,+Constraints:list) is nondet.
- *
- * Checks if the given Line satisfies the Constraints. Can also generate all
- * valid lines if given a line with some or all members unbound. Examples:
- *   ?- check_line([x, ' ', x, ' '], [1,1]).
- *   true .
- *   ?- L = [_,_,_,_,_], check_line(L, [2,1]).
- *   L = [x, x, ' ', x, ' '] ;
- *   L = [x, x, ' ', ' ', x] ;
- *   L = [' ', x, x, ' ', x] .
- */
-check_line([],[]) :- !.
-check_line(Line, [Part|Rest]) :-
-    Rest \= [],
-    add_space(Line, Line2),
-    check_part(Line2, Line3, Part),
-    force_space(Line3, Line4),
-    check_line(Line4, Rest).
-check_line(Line, [Part|[]]) :-
-    add_space(Line, Line2),
-    check_part(Line2, Line3, Part),
-    add_space(Line3, Line4),
-    check_line(Line4, []).
-
-force_space([' '|Line],Line).
-
-add_space(Line, Line).
-add_space([' '|Line],RestLine) :-
-    add_space(Line, RestLine).
-
-check_part(Line, Line, 0).
-check_part(['x'|Line], RestLine, N) :-
-    N > 0,
-    N1 is N - 1,
-    check_part(Line, RestLine, N1).
-
-
-% Predicado para verificar si el estado actual de la grilla está solucionado
-grid_solved(RowConstraints, ColConstraints, Grid) :-
-    % Convertir la grilla en una lista de filas
+    % Transponer la grilla para verificar las columnas
     transpose(Grid, TransposedGrid),
-    % Verificar las filas
-    maplist(check_line, Grid, RowConstraints),
-    % Verificar las columnas
-    maplist(check_line, TransposedGrid, ColConstraints).
 
-% Predicado para transponer una lista de listas
-transpose([], []).
+    % Obtener la columna correspondiente
+    nth0(ColN, TransposedGrid, Col),
+    nth0(ColN, ColsClues, ColNClues),
+
+    % Verificar si se cumplen las restricciones en columna
+    check_line(Col, ColNClues, ColSat).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+check_line(Line, Clues, LineSat) :-
+    check_line(Line, Clues, 0, 0, LineSat).
+
+% Caso base: si tanto la línea como las restricciones están vacías, LineSat es 1.
+check_line([], [], 0, 0, 1) :- !.
+
+% Caso base: si la línea está vacía pero quedan restricciones por verificar, LineSat es 0.
+check_line([], [_|_], _, _, 0) :- !.
+
+% Caso base: si quedan elementos en la línea pero no restricciones,
+% seguir analizando la línea mientras se mantenga la cantidad de pintados.
+check_line([Cell|LineTail], [], PaintCount, _, LineSat) :-
+    % Verificar si el elemento actual de la línea es pintado ('#').
+    (Cell == "#" ->
+        % Si hay una celda pintada en la línea restante, LineSat es 0.
+        LineSat = 0
+    ;   
+        check_line(LineTail, [], PaintCount, _, LineSat)
+    ).
+
+% Si quedan elementos en la línea y restricciones por verificar.
+check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
+    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
+    (Cell == "#", NewPaintCount is PaintCount + 1 ; 
+    Cell == "X", NewPaintCount is 0 ;
+    var(Cell), NewPaintCount is 0),
+    % Verificar si se ha alcanzado la restricción actual.
+    (NewPaintCount == Clue ->
+        % Si se alcanzó la restricción actual, continuar verificando con las restricciones restantes.
+        check_line(LineTail, CluesTail, 0, 0, LineSat)
+    ;   % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
+        check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat)
+    ).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% transpose %%%%%%%%%%%% Verificado que funciona
+
 transpose([[]|_], []).
-transpose(Grid, [Row|TRows]) :-
-    transpose_col(Grid, Row, RestGrid),
-    transpose(RestGrid, TRows).
+transpose(Matrix, [Row|Rows]) :- transpose_1st_col(Matrix, Row, RestMatrix),
+                                 transpose(RestMatrix, Rows).
+transpose_1st_col([], [], []).
+transpose_1st_col([[H|T]|Rows], [H|Hs], [T|Ts]) :- transpose_1st_col(Rows, Hs, Ts).
 
-transpose_col([], [], []).
-transpose_col([[H|T]|Rows], [H|Hs], [T|Ts]) :-
-    transpose_col(Rows, Hs, Ts).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Predicado solve que verifica si todas las restricciones se cumplen en una grilla.
+% solve/4 toma una grilla, las restricciones en fila, las restricciones en columna y un valor de resolución.
+solve(Grid, RowClues, ColClues, Solved) :-
+    % Verificar si todas las restricciones en filas se cumplen.
+    check_lines(Grid, RowClues, RowsSatisfied),
+    % Verificar si todas las restricciones en columnas se cumplen.
+    transpose(Grid, TransposedGrid),
+    check_lines(TransposedGrid, ColClues, ColsSatisfied),
+    % Si tanto las restricciones en filas como en columnas se cumplen, el nonograma está resuelto.
+    (RowsSatisfied == 1, ColsSatisfied == 1 ->
+        % Indicar que el nonograma está resuelto.
+        Solved = true
+    ;   % En caso contrario, el nonograma no está resuelto.
+        Solved = false
+    ).
+
+% Predicado auxiliar para verificar todas las líneas (filas o columnas) en la grilla.
+check_lines([], [], 1).
+check_lines([Line|LinesTail], [Clues|CluesTail], Satisfied) :-
+    check_line(Line, Clues, LineSatisfied),
+    % Verificar si esta línea cumple las restricciones y si las restantes también lo hacen.
+    check_lines(LinesTail, CluesTail, RemainingSatisfied),
+    % Verificar si todas las líneas cumplen las restricciones.
+    Satisfied is min(LineSatisfied, RemainingSatisfied).
+

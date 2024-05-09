@@ -1,8 +1,7 @@
-import React from 'react';
+function Clue({ clue, isComplete}) {
 
-function Clue({ clue }) {
     return (
-        <div className={"clue"} >
+        <div className={`clue ${ isComplete ? 'clue-complete': ''}` }>
             {clue.map((num, i) =>
                 <div key={i}>
                     {num}
@@ -11,7 +10,5 @@ function Clue({ clue }) {
         </div>
     );
 }
-
-
 
 export default Clue;
