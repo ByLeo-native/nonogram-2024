@@ -1,7 +1,8 @@
 :- module(proylcc,
     [  
         put/8,
-        solve/4
+        solve/4,
+        check_clues/5
     ]).
 
 :- use_module(library(lists)).
@@ -39,6 +40,24 @@ put(Content, [RowN, ColN], RowsClues, ColsClues, Grid, NewGrid, RowSat, ColSat):
     check_position(NewGrid, [RowN,ColN], RowsClues, ColsClues, RowSat, ColSat)
     ).
 
+
+check_clues(Grid, RowsClues, ColsClues, StatusOfTheRows, StatusOfTheCols) :-
+    check_rows(Grid, RowsClues, StatusOfTheRows),
+    check_cols(Grid, ColsClues, StatusOfTheCols).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+check_rows([], [], []).
+check_rows([Row | Rows], [Clue | Clues], [RowSat | RowsSatTail]) :-
+    check_line(Row, Clue, RowSat),
+    check_rows(Rows, Clues, RowsSatTail).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+check_cols([], [], []).
+check_cols(Grid, ColsClues, StatusOfTheCols):-
+    transpose(Grid, TransposedGrid),
+    check_rows(TransposedGrid, ColsClues, StatusOfTheCols).
+
+%%%%%%%%%%%%%%%%%%%%%
 
 check_position(Grid, [RowN, ColN], RowsClues, ColsClues, RowSat, ColSat) :-
     % Obtener la fila y columna especificadas

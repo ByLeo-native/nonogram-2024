@@ -12,34 +12,56 @@ function Game() {
   const [rowsClues, setRowsClues] = useState(null);
   const [colsClues, setColsClues] = useState(null);
   const [waiting, setWaiting] = useState(false);
-  const [gameState, setGameState] = useState(false);
   const [rowsCluesState, setRowsCluesState] = useState(null);
   const [colsCluesState, setColsCluesState] = useState(null);
   const [checkIfTheNonogramIsResolved, setCheckIfTheNonogramIsResolved] = useState(false);
+  const [isPaintedMode, setIsPaintedMode] = useState(true);
   
-  const handleToggle = (isChecked) => {
-    setGameState(isChecked);
-  };
 
   useEffect(() => {
     // Creation of the pengine server instance.    
     // This is executed just once, after the first render.    
     // The callback will run when the server is ready, and it stores the pengine instance in the pengine variable. 
-    PengineClient.init(handleServerReady);
+    PengineClient.init(handleServerReady);  
   }, []);
 
   function handleServerReady(instance) {
     pengine = instance;
-    const queryS = 'init(RowClues, ColumClues, Grid)';
+    let queryS = 'init(RowClues, ColumClues, Grid)';
     pengine.query(queryS, (success, response) => {
       if (success) {
         setGrid(response['Grid']);
         setRowsClues(response['RowClues']);
         setColsClues(response['ColumClues']);
         setRowsCluesState(Array(response['RowClues'].length).fill(false));
-        setColsCluesState(Array(response['ColumClues'].length).fill(false))
+        setColsCluesState(Array(response['ColumClues'].length).fill(false));
       }
     });
+  }
+
+  function verificarPistasCuandoInicia() {
+    if (waiting) {
+      return;
+    }
+    console.log(grid);
+    console.log(rowsClues);
+    console.log(colsClues);
+    const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
+    const rowsCluesS = JSON.stringify(rowsClues);
+    const colsCluesS = JSON.stringify(colsClues);
+    const queryS = `check_clues(${squaresS}, ${rowsCluesS}, ${colsCluesS}, StatusOfRows, StatusOfCols)`;
+    setWaiting(true);
+    pengine.query(queryS, (success, response) => {
+      if(success) {
+        console.log(`check_clues exitoso ${response}`);
+        setRowsCluesState(response['StatusOfRows'].map(element => {return element === 1 ? true : false;}));
+        setColsCluesState(response['StatusOfCols'].map(element => {return element === 1 ? true : false;}));
+      } else {
+        console.error(`Error cuando se solicita check_clues`);
+        console.log(response);
+      }
+      setWaiting(false);
+    })
   }
 
   function updateClues(row, col, RowSat, ColSat) {
@@ -59,13 +81,12 @@ function Game() {
     if (waiting) {
       return;
     }
-
     // Build Prolog query to make a move and get the new satisfacion status of the relevant clues.    
     const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
     const rowsCluesS = JSON.stringify(rowsClues);
     const colsCluesS = JSON.stringify(colsClues);
 
-    const content = gameState ? 'X' : '#';
+    const content = isPaintedMode ? '#' : 'X';
     const queryS = `put("${content}", [${i},${j}], ${rowsCluesS}, ${colsCluesS}, ${squaresS}, ResGrid, RowSat, ColSat)`; // queryS = put("#",[0,1],[], [],[["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]], GrillaRes, FilaSat, ColSat)
     setWaiting(true);
     pengine.query(queryS, (success, response) => {
@@ -111,6 +132,7 @@ function Game() {
   }
   
   let statusText = 'Keep playing!';
+  
   return (
     <div className="game">
       <Board
@@ -122,7 +144,8 @@ function Game() {
         colsCluesState={colsCluesState}
       />
       <ToggleSwitch 
-        onToggle={handleToggle}
+        paintedMode={isPaintedMode}
+        setPaintedMode={setIsPaintedMode}
       />
       <div className="game-info">
         {statusText}
