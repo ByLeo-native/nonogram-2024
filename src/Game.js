@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import PengineClient from './PengineClient';
 import Board from './Board';
 import ToggleSwitch from './ToggleSwitch';
+import WinnerBox from './WinnerBox';
 
 let pengine;
 
@@ -16,6 +17,7 @@ function Game() {
   const [colsCluesState, setColsCluesState] = useState(null);
   const [checkIfTheNonogramIsResolved, setCheckIfTheNonogramIsResolved] = useState(false);
   const [isPaintedMode, setIsPaintedMode] = useState(true);
+  const [winner, setWinner] = useState(null)
   
 
   useEffect(() => {
@@ -43,9 +45,6 @@ function Game() {
     if (waiting) {
       return;
     }
-    console.log(grid);
-    console.log(rowsClues);
-    console.log(colsClues);
     const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
     const rowsCluesS = JSON.stringify(rowsClues);
     const colsCluesS = JSON.stringify(colsClues);
@@ -118,6 +117,7 @@ function Game() {
       if(success) {
         if(response['Solved']) {
           statusText = `¡Has completado el nonograma!`;
+          setWinner(statusText);
         } else {
           console.log(`No esta resuelto`);
         }
@@ -150,6 +150,9 @@ function Game() {
       <div className="game-info">
         {statusText}
       </div>
+      <WinnerBox 
+        winner={winner}
+      />
     </div>
   );
 }

@@ -36,9 +36,9 @@ put(Content, [RowN, ColN], RowsClues, ColsClues, Grid, NewGrid, RowSat, ColSat):
 	(replace(Cell, ColN, _, Row, NewRow),
 	Cell == Content
 		;
-	replace(_Cell, ColN, Content, Row, NewRow),
-    check_position(NewGrid, [RowN,ColN], RowsClues, ColsClues, RowSat, ColSat)
-    ).
+	replace(_Cell, ColN, Content, Row, NewRow)
+    ),
+    check_position(NewGrid, [RowN,ColN], RowsClues, ColsClues, RowSat, ColSat).
 
 
 check_clues(Grid, RowsClues, ColsClues, StatusOfTheRows, StatusOfTheCols) :-
@@ -83,10 +83,18 @@ check_line(Line, Clues, LineSat) :-
     check_line(Line, Clues, 0, 0, LineSat).
 
 % Caso base: si tanto la línea como las restricciones están vacías, LineSat es 1.
-check_line([], [], 0, 0, 1) :- !.
+check_line([], [], 0, 0, 1).
+
+% Caso base: si la restricción actual es 0 y la línea está vacía, se considera una línea válida.
+check_line([], [0], 0, _, 1).
+
+% Caso base: si la restricción actual es 0 y la línea no está vacía, se verifica recursivamente la línea sin modificar la restricción.
+check_line([Cell|_], [0], _, _, LineSat) :- Cell == "#", LineSat = 0.
+check_line([Cell|LineTail], [0], PaintCount, _, LineSat) :- Cell == "X", check_line(LineTail, [0], PaintCount, _, LineSat).
+check_line([Cell|LineTail], [0], PaintCount, _, LineSat) :- var(Cell), check_line(LineTail, [0], PaintCount, _, LineSat).
 
 % Caso base: si la línea está vacía pero quedan restricciones por verificar, LineSat es 0.
-check_line([], [_|_], _, _, 0) :- !.
+check_line([], [_|_], _, _, 0).
 
 % Caso base: si quedan elementos en la línea pero no restricciones,
 % seguir analizando la línea mientras se mantenga la cantidad de pintados.
@@ -102,6 +110,7 @@ check_line([Cell|LineTail], [], PaintCount, _, LineSat) :-
 % Si quedan elementos en la línea y restricciones por verificar.
 check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
     % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
+    Clue > 0,
     (Cell == "#", NewPaintCount is PaintCount + 1 ; 
     Cell == "X", NewPaintCount is 0 ;
     var(Cell), NewPaintCount is 0),
