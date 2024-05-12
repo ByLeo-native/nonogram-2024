@@ -88,9 +88,11 @@ check_line([], [], 0, 0, 1).
 % Caso base: si la restricción actual es 0 y la línea está vacía, se considera una línea válida.
 check_line([], [0], 0, _, 1).
 
-% Caso base: si la restricción actual es 0 y la línea no está vacía, se verifica recursivamente la línea sin modificar la restricción.
+% Caso base: si la restricción actual es 0 y la línea no está vacía, entonces si la celda esta pintada ('#') entonces no cumple con la restricción de la línea.
 check_line([Cell|_], [0], _, _, LineSat) :- Cell == "#", LineSat = 0.
+% Caso recursivo: si la restricción actual es 0 y la línea no está vacía, y si la celda es marcada con no-pintada entonces se verifica recursivamente la línea sin modificar la restricción.
 check_line([Cell|LineTail], [0], PaintCount, _, LineSat) :- Cell == "X", check_line(LineTail, [0], PaintCount, _, LineSat).
+% Caso recursivo: si la restriccion actual es 0 y la línea no está vacía, y si la celda esta vacía (no instanciada) entonces se verifica recursivamente la línea sin modificar la restricción.
 check_line([Cell|LineTail], [0], PaintCount, _, LineSat) :- var(Cell), check_line(LineTail, [0], PaintCount, _, LineSat).
 
 % Caso base: si la línea está vacía pero quedan restricciones por verificar, LineSat es 0.
