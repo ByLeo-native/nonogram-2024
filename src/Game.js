@@ -37,30 +37,29 @@ function Game() {
         setColsClues(response['ColumClues']);
         setRowsCluesState(Array(response['RowClues'].length).fill(false));
         setColsCluesState(Array(response['ColumClues'].length).fill(false));
+        
+        
+        const g = JSON.stringify(response['Grid']).replaceAll('"_"', '_');
+        const rClues = JSON.stringify(response['RowClues']);
+        const cClues = JSON.stringify(response['ColumClues']);
+        console.log(g);
+        const querySS = `check_clues(${g}, ${rClues}, ${cClues}, StatusOfRows, StatusOfCols)`;
+        setWaiting(true);
+        pengine.query(querySS, (success, response) => {
+          if(success) {
+            console.log(`check_clues exitoso ${response}`);
+            setRowsCluesState(response['StatusOfRows'].map(element => {return element === 1 ? true : false;}));
+            setColsCluesState(response['StatusOfCols'].map(element => {return element === 1 ? true : false;}));
+            console.log(response['StatusOfRows']);
+            console.log(response['StatusOfCols']);
+          } else {
+            console.error(`Error cuando se solicita check_clues`);
+            console.log(response);
+          }
+          setWaiting(false);
+        })
       }
     });
-  }
-
-  function verificarPistasCuandoInicia() {
-    if (waiting) {
-      return;
-    }
-    const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
-    const rowsCluesS = JSON.stringify(rowsClues);
-    const colsCluesS = JSON.stringify(colsClues);
-    const queryS = `check_clues(${squaresS}, ${rowsCluesS}, ${colsCluesS}, StatusOfRows, StatusOfCols)`;
-    setWaiting(true);
-    pengine.query(queryS, (success, response) => {
-      if(success) {
-        console.log(`check_clues exitoso ${response}`);
-        setRowsCluesState(response['StatusOfRows'].map(element => {return element === 1 ? true : false;}));
-        setColsCluesState(response['StatusOfCols'].map(element => {return element === 1 ? true : false;}));
-      } else {
-        console.error(`Error cuando se solicita check_clues`);
-        console.log(response);
-      }
-      setWaiting(false);
-    })
   }
 
   function updateClues(row, col, RowSat, ColSat) {
