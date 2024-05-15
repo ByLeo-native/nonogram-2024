@@ -38,11 +38,13 @@ function Game() {
         setRowsCluesState(Array(response['RowClues'].length).fill(false));
         setColsCluesState(Array(response['ColumClues'].length).fill(false));
         
-        
+        /**
+         * Se realiza una nueva peticion para verificar si el nonograma cuenta con alguna restricción cumplida.
+         * Se utiliza la respuesta de la primera peticion en vez de las constantes declaradas porque falla.
+         */
         const g = JSON.stringify(response['Grid']).replaceAll('"_"', '_');
         const rClues = JSON.stringify(response['RowClues']);
         const cClues = JSON.stringify(response['ColumClues']);
-        console.log(g);
         const querySS = `check_clues(${g}, ${rClues}, ${cClues}, StatusOfRows, StatusOfCols)`;
         setWaiting(true);
         pengine.query(querySS, (success, response) => {
