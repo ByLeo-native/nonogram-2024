@@ -105,14 +105,19 @@ check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
     Clue > 0,
     Cell == "#",
     NewPaintCount is PaintCount + 1,
-    (NewPaintCount == Clue -> check_line(LineTail, CluesTail, 0, 0, LineSat);
+    (NewPaintCount == Clue,
+    check_space(LineTail, EstaEspaciada),
+    EstaEspaciada == 1 ->
+        check_line(LineTail, CluesTail, 0, 0, LineSat);
         check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat)).
+        
 % Para el caso de leer una celda marcada como no-pintada
 check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :- 
     Clue > 0, 
     Cell == "X",
     NewPaintCount is 0,
     check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat).
+
 % Para el caso de leer una celda no instanciada
 check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :- 
     Clue > 0,
@@ -137,6 +142,16 @@ check_line([Cell|LineTail], [0|_], PaintCount, _, LineSat) :- Cell == "X", check
 % Caso recursivo: si la restriccion actual es 0 y la línea no está vacía,
 % y si la celda esta vacía (no instanciada) entonces se verifica recursivamente la línea sin modificar la restricción.
 check_line([Cell|LineTail], [0|_], PaintCount, _, LineSat) :- var(Cell), check_line(LineTail, [0], PaintCount, _, LineSat).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% check_space
+check_space([], 1).
+
+check_space([Cell | _], EstaSeparado) :- Cell == "#", EstaSeparado = 0.
+
+check_space([Cell | _], EstaSeparado) :- Cell == "X", EstaSeparado = 1.
+
+check_space([Cell | _], EstaSeparado) :- var(Cell), EstaSeparado = 1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% transpose %%%%%%%%%%%% Verificado que funciona
 
