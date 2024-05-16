@@ -2,8 +2,7 @@
     [  
         put/8,
         solve/4,
-        check_clues/5,
-        check_line/3
+        check_clues/5
     ]).
 
 :- use_module(library(lists)).
@@ -101,19 +100,25 @@ check_line([Cell|LineTail], [], PaintCount, _, LineSat) :-
     ).
 
 % Si quedan elementos en la línea y restricciones por verificar.
+% Para el caso de leer una celda pintada
 check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
-    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
     Clue > 0,
-    (Cell == "#", NewPaintCount is PaintCount + 1 ; 
-    Cell == "X", NewPaintCount is 0 ;
-    var(Cell), NewPaintCount is 0),
-    % Verificar si se ha alcanzado la restricción actual.
-    (NewPaintCount == Clue ->
-        % Si se alcanzó la restricción actual, continuar verificando con las restricciones restantes.
-        check_line(LineTail, CluesTail, 0, 0, LineSat)
-    ;   % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
-        check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat)
-    ).
+    Cell == "#",
+    NewPaintCount is PaintCount + 1,
+    (NewPaintCount == Clue -> check_line(LineTail, CluesTail, 0, 0, LineSat);
+        check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat)).
+% Para el caso de leer una celda marcada como no-pintada
+check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :- 
+    Clue > 0, 
+    Cell == "X",
+    NewPaintCount is 0,
+    check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat).
+% Para el caso de leer una celda no instanciada
+check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :- 
+    Clue > 0,
+    var(Cell),
+    NewPaintCount is 0,
+    check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat).
 
 %%%%%%%%%%%%%%%% Contemplacion para cuando la restriccion de la linea es 0
 

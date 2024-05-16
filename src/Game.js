@@ -15,7 +15,6 @@ function Game() {
   const [waiting, setWaiting] = useState(false);
   const [rowsCluesState, setRowsCluesState] = useState(null);
   const [colsCluesState, setColsCluesState] = useState(null);
-  const [checkIfTheNonogramIsResolved, setCheckIfTheNonogramIsResolved] = useState(false);
   const [isPaintedMode, setIsPaintedMode] = useState(true);
   const [winner, setWinner] = useState(null)
   
@@ -49,11 +48,8 @@ function Game() {
         setWaiting(true);
         pengine.query(querySS, (success, response) => {
           if(success) {
-            console.log(`check_clues exitoso ${response}`);
             setRowsCluesState(response['StatusOfRows'].map(element => {return element === 1 ? true : false;}));
             setColsCluesState(response['StatusOfCols'].map(element => {return element === 1 ? true : false;}));
-            console.log(response['StatusOfRows']);
-            console.log(response['StatusOfCols']);
           } else {
             console.error(`Error cuando se solicita check_clues`);
             console.log(response);
@@ -92,38 +88,28 @@ function Game() {
     pengine.query(queryS, (success, response) => {
       if (success) {
         setGrid(response['ResGrid']);
-      updateClues(i, j, response['RowSat'], response['ColSat']);
-      if (response['RowSat'] === 1 || response['ColSat'] === 1) {
-        setCheckIfTheNonogramIsResolved(true);
-      }
-      // Llama a isNonogramSolved dentro del callback de pengine.query
-      if (checkIfTheNonogramIsResolved) {
-        isNonogramSolved();
-      }
-      } else {
-        console.error("La consulta no tuvo éxito.");
-      }
-      setWaiting(false);
-    });
-  }
-
-  function isNonogramSolved() {
-    setCheckIfTheNonogramIsResolved(false);
-    console.log(grid);
-    const squaresS = JSON.stringify(grid).replaceAll('"_"', '_');
-    const rowsCluesS = JSON.stringify(rowsClues);
-    const colsCluesS = JSON.stringify(colsClues);
-    const queryS = `solve(${squaresS}, ${rowsCluesS}, ${colsCluesS}, Solved)`;
-    pengine.query( queryS, (success, response) => {
-      if(success) {
-        if(response['Solved']) {
-          statusText = `¡Has completado el nonograma!`;
-          setWinner(statusText);
-        } else {
-          console.log(`No esta resuelto`);
+        updateClues(i, j, response['RowSat'], response['ColSat']);
+        /**
+         * Si se verifica las restricciones en fila y en columna en simultaneo, entonces se verifica si se resolvio el nonograma.
+         * VERIFICACION DE NONOGRAMA
+         */
+        if (response['RowSat'] === 1 && response['ColSat'] === 1) {
+          const g = JSON.stringify(response['ResGrid']).replaceAll('"_"', '_');
+          const querySS = `solve(${g}, ${rowsCluesS}, ${colsCluesS}, Solved)`;
+          pengine.query(querySS, (success, response) => {
+            if(success) {
+              if(response['Solved']) {
+                statusText = `¡Has completado el nonograma!`;
+                setWinner(statusText);
+              } else {
+                console.log(`No esta resuelto`);
+              }
+            } else {
+              console.error(`La solicitud de solve no fue exitosa`);
+            }
+          });
         }
-      } else {
-        console.error(`No hubo exito con el solve`);
+        setWaiting(false);
       }
     })
   }
