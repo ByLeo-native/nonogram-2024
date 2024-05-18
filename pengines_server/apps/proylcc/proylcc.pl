@@ -133,7 +133,7 @@ check_line([], [0|_], 0, _, 1).
 
 % Caso base: si la restricción actual es 0 y la línea no está vacía,
 % entonces si la celda esta pintada ('#') entonces no cumple con la restricción de la línea.
-check_line([Cell|_], [0|_], _, _, LineSat) :- Cell == "#", LineSat = 1.
+check_line([Cell|_], [0|_], _, _, LineSat) :- Cell == "#", LineSat = 0.
 
 % Caso recursivo: si la restricción actual es 0 y la línea no está vacía,
 % y si la celda es marcada con no-pintada entonces se verifica recursivamente la línea sin modificar la restricción.
@@ -144,13 +144,14 @@ check_line([Cell|LineTail], [0|_], PaintCount, _, LineSat) :- Cell == "X", check
 check_line([Cell|LineTail], [0|_], PaintCount, _, LineSat) :- var(Cell), check_line(LineTail, [0], PaintCount, _, LineSat).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%% check_space
+%%%%%%%%%%%%%%%%%%%%%%%%%%% check_space - Verifica si luego de que se cumpla una restricción existe una celda no pintada o es el final de la línea
+% Si es el final de la linea, entonces verifica el espaciado
 check_space([], 1).
-
+% Si luego de que se cumpla una restricción existe una celda pintada, entonces no verifica el espaciado entre pistas
 check_space([Cell | _], EstaSeparado) :- Cell == "#", EstaSeparado = 0.
-
+% Si luego de que se cumpla una restriccion existe una celda marcada como no-pintada, entonces verifica el espaciado entre pistas
 check_space([Cell | _], EstaSeparado) :- Cell == "X", EstaSeparado = 1.
-
+% Si luego de que se cumpla una restricción existe una celda no instanciada (no pintada), entonces verifica el espaciado entre pistas
 check_space([Cell | _], EstaSeparado) :- var(Cell), EstaSeparado = 1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% transpose %%%%%%%%%%%% Verificado que funciona
