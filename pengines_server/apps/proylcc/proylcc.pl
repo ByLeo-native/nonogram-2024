@@ -2,7 +2,8 @@
     [  
         put/8,
         solve/4,
-        check_clues/5
+        check_clues/5,
+        check_line/3
     ]).
 
 :- use_module(library(lists)).
@@ -88,37 +89,64 @@ check_line([], [], 0, 0, 1).
 % Caso base: si la línea está vacía pero quedan restricciones por verificar, LineSat es 0.
 check_line([], [Clue|_], _, _, 0) :- Clue > 0.
 
-% Caso base: si quedan elementos en la línea pero no restricciones,
-% seguir analizando la línea mientras se mantenga la cantidad de pintados.
-check_line([Cell|LineTail], [], PaintCount, _, LineSat) :-
-    % Verificar si el elemento actual de la línea es pintado ('#').
-    (Cell == "#" ->
-        % Si hay una celda pintada en la línea restante, LineSat es 0.
-        LineSat = 0
-    ;   
-        check_line(LineTail, [], PaintCount, _, LineSat)
-    ).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Caso base: si quedan elementos en la línea pero no restricciones,
+%% seguir analizando la línea mientras se mantenga la cantidad de pintados.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+check_line([Cell|_], [], _, _, 0):- Cell == "#".
 
-% Si quedan elementos en la línea y restricciones por verificar.
-% Para el caso de leer una celda pintada
+check_line([Cell|LineTail], [], PaintCount, _, LineSat):-
+    var(Cell),
+    check_line(LineTail, [], PaintCount, _, LineSat).
+
+check_line([Cell|LineTail], [], PaintCount, _, LineSat) :-
+    Cell == "X",
+    check_line(LineTail, [], PaintCount, _, LineSat).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   % Si quedan elementos en la línea y restricciones por verificar.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
+    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
     Clue > 0,
     Cell == "#",
     NewPaintCount is PaintCount + 1,
-    (NewPaintCount == Clue -> check_line(LineTail, CluesTail, 0, 0, LineSat);
-        check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat)).
-% Para el caso de leer una celda marcada como no-pintada
-check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :- 
-    Clue > 0, 
-    Cell == "X",
-    NewPaintCount is 0,
-    check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat).
-% Para el caso de leer una celda no instanciada
-check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :- 
+    % Verificar si se ha alcanzado la restricción actual.
+    NewPaintCount == Clue,
+    % Si se alcanzó la restricción actual, continuar verificando con las restricciones restantes.
+    check_line(LineTail, CluesTail, 0, 0, LineSat).
+
+
+check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
+    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
     Clue > 0,
-    var(Cell),
-    NewPaintCount is 0,
+    Cell == "#", 
+    NewPaintCount is PaintCount + 1,
+    % Verificar si se ha alcanzado la restricción actual.
+    NewPaintCount =\= Clue,
+    % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
     check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat).
+
+
+check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :-
+    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
+    Clue > 0, 
+    Cell == "X", 
+    % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
+    check_line(LineTail, [Clue|CluesTail], 0, 1, LineSat).
+
+
+% Si quedan elementos en la línea y restricciones por verificar.
+check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :-
+    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
+    Clue > 0,
+    var(Cell), 
+    % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
+    check_line(LineTail, [Clue|CluesTail], 0, 1, LineSat).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%% Contemplacion para cuando la restriccion de la linea es 0
 
@@ -157,12 +185,9 @@ solve(Grid, RowClues, ColClues, Solved) :-
     transpose(Grid, TransposedGrid),
     check_lines(TransposedGrid, ColClues, ColsSatisfied),
     % Si tanto las restricciones en filas como en columnas se cumplen, el nonograma está resuelto.
-    (RowsSatisfied == 1, ColsSatisfied == 1 ->
-        % Indicar que el nonograma está resuelto.
-        Solved = true
-    ;   % En caso contrario, el nonograma no está resuelto.
-        Solved = false
-    ).
+    %%La unica forma de que Solved de true o 1 es que se satisfagan RowsSatisfied y ColsSatisfied simultaneamente.
+    Solved is min(RowsSatisfied, ColsSatisfied).
+
 
 % Predicado auxiliar para verificar todas las líneas (filas o columnas) en la grilla.
 check_lines([], [], 1).
@@ -172,4 +197,3 @@ check_lines([Line|LinesTail], [Clues|CluesTail], Satisfied) :-
     check_lines(LinesTail, CluesTail, RemainingSatisfied),
     % Verificar si todas las líneas cumplen las restricciones.
     Satisfied is min(LineSatisfied, RemainingSatisfied).
-
