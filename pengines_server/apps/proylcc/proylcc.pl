@@ -2,8 +2,7 @@
     [  
         put/8,
         solve/4,
-        check_clues/5,
-        check_line/3
+        check_clues/5
     ]).
 
 :- use_module(library(lists)).
@@ -109,16 +108,23 @@ check_line([Cell|LineTail], [], PaintCount, _, LineSat) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   % Si quedan elementos en la línea y restricciones por verificar.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Verificar que la celda es '#', incrementar el contador de pintura y verificar tres condiciones:
+% NewPaintCount == Clue, check_space(LineTail, EstaEspaciada), EstaEspaciada == 1
 check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
-    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
     Clue > 0,
     Cell == "#",
     NewPaintCount is PaintCount + 1,
-    % Verificar si se ha alcanzado la restricción actual.
-    NewPaintCount == Clue,
-    % Si se alcanzó la restricción actual, continuar verificando con las restricciones restantes.
-    check_line(LineTail, CluesTail, 0, 0, LineSat).
+    ( NewPaintCount == Clue,
+      check_space(LineTail, EstaEspaciada),
+      EstaEspaciada == 1 ->
+        % Si todas las condiciones son verdaderas, continuar con las siguientes pistas
+        check_line(LineTail, CluesTail, 0, 0, LineSat)
+    ;
+        % Si alguna de las condiciones es falsa, continuar con la misma pista
+        check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat)
+    ).
 
+% Otras cláusulas de check_line deben seguir aquí, por ejemplo para manejar celdas 'X' y celdas no instanciadas (var)
 
 check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
     % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
@@ -156,7 +162,7 @@ check_line([], [0|_], 0, _, 1).
 
 % Caso base: si la restricción actual es 0 y la línea no está vacía,
 % entonces si la celda esta pintada ('#') entonces no cumple con la restricción de la línea.
-check_line([Cell|_], [0|_], _, _, LineSat) :- Cell == "#", LineSat = 1.
+check_line([Cell|_], [0|_], _, _, LineSat) :- Cell == "#", LineSat = 0.
 
 % Caso recursivo: si la restricción actual es 0 y la línea no está vacía,
 % y si la celda es marcada con no-pintada entonces se verifica recursivamente la línea sin modificar la restricción.
@@ -197,3 +203,13 @@ check_lines([Line|LinesTail], [Clues|CluesTail], Satisfied) :-
     check_lines(LinesTail, CluesTail, RemainingSatisfied),
     % Verificar si todas las líneas cumplen las restricciones.
     Satisfied is min(LineSatisfied, RemainingSatisfied).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% check_space - Verifica si luego de que se cumpla una restricción existe una celda no pintada o es el final de la línea
+% Si es el final de la linea, entonces verifica el espaciado
+check_space([], 1).
+% Si luego de que se cumpla una restricción existe una celda pintada, entonces no verifica el espaciado entre pistas
+check_space([Cell | _], EstaSeparado) :- Cell == "#", EstaSeparado = 0.
+% Si luego de que se cumpla una restriccion existe una celda marcada como no-pintada, entonces verifica el espaciado entre pistas
+check_space([Cell | _], EstaSeparado) :- Cell == "X", EstaSeparado = 1.
+% Si luego de que se cumpla una restricción existe una celda no instanciada (no pintada), entonces verifica el espaciado entre pistas
+check_space([Cell | _], EstaSeparado) :- var(Cell), EstaSeparado = 1.
