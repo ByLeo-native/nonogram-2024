@@ -2,6 +2,14 @@
   box-sizing: border-box;
 }
 
+.container {
+  display: flex;
+  align-items: center; /* Centra los elementos verticalmente */
+  padding: 10px; /* Ajusta el espaciado según sea necesario */
+  width: 100%;
+  justify-content: space-around;
+}
+
 body {
   font-family: sans-serif;
   margin: 20px;
@@ -217,3 +225,25 @@ body {
   width: 50px; /* Ajusta el tamaño del icono según sea necesario */
 }
 
+.click-button {
+  width: 60px; /* Ancho del botón */
+  height: 60px; /* Alto del botón */
+  border-radius: 50%; /* Hace el botón redondo */
+  border: none; /* Sin bordes */
+  background-color: white; /* Color de fondo predeterminado */
+  color: white; /* Color del texto */
+  font-size: 16px; /* Tamaño de la fuente */
+  cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
+  transition: background-color 0.3s, transform 0.3s; /* Transición suave */
+  outline: none; /* Sin contorno en el enfoque */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.click-button:active {
+  background-color: #0056b3; /* Color de fondo cuando está activo */
+  transform: scale(0.95); /* Efecto de presión */
+}
+
+.click-button.reveal-active {
+  background-color: #28a745; /* Color de fondo cuando está en modo revelar */
+}

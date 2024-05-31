@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import PengineClient from './PengineClient';
 import Board from './Board';
 import ToggleSwitch from './ToggleSwitch';
+import RevealButton from './RevealButton';
 import WinnerBox from './WinnerBox';
+import SolutionButton from './SolutionButton';
 
 let pengine;
 
@@ -16,8 +18,12 @@ function Game() {
   const [rowsCluesState, setRowsCluesState] = useState(null);
   const [colsCluesState, setColsCluesState] = useState(null);
   const [isPaintedMode, setIsPaintedMode] = useState(true);
-  const [winner, setWinner] = useState(null)
-  
+  const [winner, setWinner] = useState(null);
+
+
+  const [revealMode, setRevealMode] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
+  const [solutionGrid, setSolutionGrid] = useState(null);
 
   useEffect(() => {
     // Creation of the pengine server instance.    
@@ -114,6 +120,20 @@ function Game() {
     })
   }
 
+  function revealCell(i, j) {
+    const squaresS = JSON.stringify(grid).replaceAll('"_"', '_');
+    const queryS = `reveal([${i},${j}], ${squaresS}, RevealedContent)`;
+    setWaiting(true);
+    pengine.query(queryS, (success, response) => {
+      if (success) {
+        const newGrid = [...grid];
+        newGrid[i][j] = response['RevealedContent'];
+        setGrid(newGrid);
+      }
+      setWaiting(false);
+    });
+  }
+
   if (!grid) {
     return null;
   }
@@ -122,6 +142,17 @@ function Game() {
   
   return (
     <div className="game">
+      <div className="container">
+        <RevealButton  // <-- Usa el nuevo componente RevealButton
+          revealMode={revealMode}
+          setRevealMode={setRevealMode}
+        />
+        <SolutionButton
+          solutionMode={showSolution}
+          setSolutionMode={setShowSolution}
+        />
+      </div>
+      
       <Board
         grid={grid}
         rowsClues={rowsClues}
