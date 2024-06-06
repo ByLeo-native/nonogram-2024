@@ -2,10 +2,16 @@
     [  
         put/8,
         solve/4,
-        check_clues/5
+        check_clues/5,
+        generate_grid/3,
+        resolver_nonograma/3,
+        check_line/2,
+        normalizar_linea/2,
+        normalizar_grid/2
     ]).
 
 :- use_module(library(lists)).
+:- use_module(library(clpfd)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -191,7 +197,7 @@ solve(Grid, RowClues, ColClues, Solved) :-
     transpose(Grid, TransposedGrid),
     check_lines(TransposedGrid, ColClues, ColsSatisfied),
     % Si tanto las restricciones en filas como en columnas se cumplen, el nonograma está resuelto.
-    %%La unica forma de que Solved de true o 1 es que se satisfagan RowsSatisfied y ColsSatisfied simultaneamente.
+    %% La unica forma de que Solved de true o 1 es que se satisfagan RowsSatisfied y ColsSatisfied simultaneamente.
     Solved is min(RowsSatisfied, ColsSatisfied).
 
 
@@ -213,3 +219,121 @@ check_space([Cell | _], EstaSeparado) :- Cell == "#", EstaSeparado = 0.
 check_space([Cell | _], EstaSeparado) :- Cell == "X", EstaSeparado = 1.
 % Si luego de que se cumpla una restricción existe una celda no instanciada (no pintada), entonces verifica el espaciado entre pistas
 check_space([Cell | _], EstaSeparado) :- var(Cell), EstaSeparado = 1.
+
+%%%%%%%%% ver solucion de nonograma
+
+
+% line//1: Predicado DCG para definir las restricciones de una línea.
+line([]) --> [].
+line([Block|Rest]) --> sequence(Block), zeros, line(Rest).
+
+% sequence//1: Define una secuencia de 1s de longitud N.
+sequence(0) --> [].
+sequence(N) --> { N > 0 }, [1], { N1 is N - 1 }, sequence(N1).
+
+% zeros//0: Define una secuencia de 0s, al menos uno si es seguida por otro bloque.
+zeros --> [].
+zeros --> [0], zeros.
+
+generate_list(0, _, []).
+generate_list(N, E, [E|T]) :-
+    N > 0,
+    N1 is N - 1,
+    generate_list(N1, E, T).
+
+% Predicado para generar una grilla de tamaño Width x Height
+generate_grid(_, 0, []).
+generate_grid(Width, Height, [Row|Grid]) :-
+    Height > 0,
+    Height1 is Height - 1,
+    length(Row, Width),
+    generate_grid(Width, Height1, Grid).
+
+
+% resolver nonograma debe recibir las restricciones en fila y restricciones en columna
+% Debo obtener una grilla tal que cumple con las restricciones en fila y restricciones en columna
+% NO FUNCIONA LO SIGUIENTE
+% resolver_nonograma(RowsClues, ColsClues, SolutionGrid) :-
+%    findall(Grid, solve(Grid, RowsClues, ColsClues, 1), SolutionGrid).
+%
+%
+%
+%
+%
+%
+%
+%
+
+resolver_nonograma(RowsClues, ColsClues, SolutionGrid) :-
+    length(RowsClues, NRows),
+    length(ColsClues, NCols),
+    generate_grid(NCols, NRows, SolutionGrid),
+    transpose(SolutionGrid, TransposedGrid),
+    append(SolutionGrid, TransposedGrid, Lines),
+    append(RowsClues, ColsClues, Clues),
+    pack(Lines, Clues, Pack),
+    sort(Pack, SortedPack),
+    resolver_nonograma(SortedPack).
+
+% Existe algun problema en este predicado que falla
+resolver_nonograma([]).
+resolver_nonograma([line(_, Line, Clues)|Rest]) :-
+    check_line(Line, Clues),
+    resolver_nonograma(Rest).
+
+pack([], [], []).
+pack([CheckLine|Lines], [Clues|CluesTail], [line(Count, CheckLine, Clues)|Result]) :-
+    findall(CheckLine, check_line(CheckLine, Clues), NCheckLine),
+    length(NCheckLine, Count),
+    pack(Lines, CluesTail, Result).
+
+
+% Este predicado verifica si una fila cumple con sus restricciones:
+%
+% check_line/2: Divide las restricciones en partes y verifica cada parte recursivamente.
+% add_space/2 y force_space/2: Manejan los espacios entre bloques de celdas llenas.
+% check_part/3: Verifica si una secuencia de celdas llenas cumple con una parte de las restricciones.
+
+check_line([],[]) :- !.
+check_line(Line, [Part|Rest]) :-
+    Rest \= [],
+    add_space(Line, Line2),
+    check_part(Line2, Line3, Part),
+    force_space(Line3, Line4),
+    check_line(Line4, Rest).
+check_line(Line, [Part|[]]) :-
+    add_space(Line, Line2),
+    check_part(Line2, Line3, Part),
+    add_space(Line3, Line4),
+    check_line(Line4, []).
+
+check_line([], [0|_]).
+check_line([Cell|_], [0|_]) :- Cell == "#", false.
+check_line([Cell|LineTail], [0|_]) :- Cell == "X", check_line(LineTail, [0]).
+check_line([Cell|LineTail], [0|_]) :- var(Cell), check_line(LineTail, [0]).
+
+
+force_space(["X"|Line],Line).
+
+%%%%%%% force_space(["X"|Line], Line).
+
+add_space(Line, Line).
+add_space(["X"|Line],RestLine) :-
+    add_space(Line, RestLine).
+
+% add_space(["X"|Line], RestLine) :- 
+%    add_space(Line, RestLine).
+
+check_part(Line, Line, 0).
+check_part(["#"|Line], RestLine, N) :-
+    N > 0,
+    N1 is N - 1,
+    check_part(Line, RestLine, N1).
+
+normalizar_grid([Line | LinesTail], [NormalizedLine | NormalizedLinesTail]) :-
+    normalizar_linea(Line, NormalizedLine),
+    normalizar_grid(LinesTail, NormalizedLinesTail).
+
+normalizar_linea([], []).
+normalizar_linea(["#" | LineTail], [ NCell | Rest]) :- NCell is "#", normalizar_linea(LineTail, Rest).
+normalizar_linea([Cell | LineTail],[ NCell | Rest]) :- Cell \= "#", NCell is "X", normalizar_linea(LineTail, Rest).
