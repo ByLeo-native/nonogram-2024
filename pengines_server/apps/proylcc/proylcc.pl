@@ -7,7 +7,8 @@
         resolver_nonograma/3,
         check_line/2,
         normalizar_linea/2,
-        normalizar_grid/2
+        normalizar_grid/2,
+        consultar_celda/6
     ]).
 
 :- use_module(library(lists)).
@@ -222,25 +223,6 @@ check_space([Cell | _], EstaSeparado) :- var(Cell), EstaSeparado = 1.
 
 %%%%%%%%% ver solucion de nonograma
 
-
-% line//1: Predicado DCG para definir las restricciones de una línea.
-line([]) --> [].
-line([Block|Rest]) --> sequence(Block), zeros, line(Rest).
-
-% sequence//1: Define una secuencia de 1s de longitud N.
-sequence(0) --> [].
-sequence(N) --> { N > 0 }, [1], { N1 is N - 1 }, sequence(N1).
-
-% zeros//0: Define una secuencia de 0s, al menos uno si es seguida por otro bloque.
-zeros --> [].
-zeros --> [0], zeros.
-
-generate_list(0, _, []).
-generate_list(N, E, [E|T]) :-
-    N > 0,
-    N1 is N - 1,
-    generate_list(N1, E, T).
-
 % Predicado para generar una grilla de tamaño Width x Height
 generate_grid(_, 0, []).
 generate_grid(Width, Height, [Row|Grid]) :-
@@ -249,20 +231,8 @@ generate_grid(Width, Height, [Row|Grid]) :-
     length(Row, Width),
     generate_grid(Width, Height1, Grid).
 
-
 % resolver nonograma debe recibir las restricciones en fila y restricciones en columna
 % Debo obtener una grilla tal que cumple con las restricciones en fila y restricciones en columna
-% NO FUNCIONA LO SIGUIENTE
-% resolver_nonograma(RowsClues, ColsClues, SolutionGrid) :-
-%    findall(Grid, solve(Grid, RowsClues, ColsClues, 1), SolutionGrid).
-%
-%
-%
-%
-%
-%
-%
-%
 
 resolver_nonograma(RowsClues, ColsClues, SolutionGrid) :-
     length(RowsClues, NRows),
@@ -312,17 +282,11 @@ check_line([Cell|_], [0|_]) :- Cell == "#", false.
 check_line([Cell|LineTail], [0|_]) :- Cell == "X", check_line(LineTail, [0]).
 check_line([Cell|LineTail], [0|_]) :- var(Cell), check_line(LineTail, [0]).
 
-
 force_space(["X"|Line],Line).
-
-%%%%%%% force_space(["X"|Line], Line).
 
 add_space(Line, Line).
 add_space(["X"|Line],RestLine) :-
     add_space(Line, RestLine).
-
-% add_space(["X"|Line], RestLine) :- 
-%    add_space(Line, RestLine).
 
 check_part(Line, Line, 0).
 check_part(["#"|Line], RestLine, N) :-
@@ -337,3 +301,13 @@ normalizar_grid([Line | LinesTail], [NormalizedLine | NormalizedLinesTail]) :-
 normalizar_linea([], []).
 normalizar_linea(["#" | LineTail], [ NCell | Rest]) :- NCell is "#", normalizar_linea(LineTail, Rest).
 normalizar_linea([Cell | LineTail],[ NCell | Rest]) :- Cell \= "#", NCell is "X", normalizar_linea(LineTail, Rest).
+
+
+consultar_celda([RowN, ColN], RowsClues, ColsClues, DebePintarse) :-
+    resolver_nonograma(RowsClues, ColsClues, SolutionGrid),
+    nth0(RowN, SolutionGrid, Row),
+    nth0(ColN, Row, Cell),
+    consultar_celda_auxiliar(Cell, DebePintarse).
+
+consultar_celda_auxiliar("#", true).
+consultar_celda_auxiliar("X", false).

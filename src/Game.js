@@ -121,8 +121,10 @@ function Game() {
   }
 
   function revealCell(i, j) {
-    const squaresS = JSON.stringify(grid).replaceAll('"_"', '_');
-    const queryS = `reveal([${i},${j}], ${squaresS}, RevealedContent)`;
+    const rowsCluesS = JSON.stringify(rowsClues);
+    const colsCluesS = JSON.stringify(colsClues);
+
+    const queryS = `reveal([${i},${j}], ${rowsCluesS}, ${colsCluesS}, RevealedContent)`;
     setWaiting(true);
     pengine.query(queryS, (success, response) => {
       if (success) {
