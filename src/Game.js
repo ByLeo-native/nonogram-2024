@@ -5,6 +5,7 @@ import ToggleSwitch from './ToggleSwitch';
 import RevealButton from './RevealButton';
 import WinnerBox from './WinnerBox';
 import SolutionButton from './SolutionButton';
+import SolutionBoard from './SolutionBoard';
 
 let pengine;
 
@@ -144,6 +145,19 @@ function Game() {
     }
   }
 
+
+  function resolveNonograma() {
+    const rowsCluesS = JSON.stringify(rowsClues);
+    const colsCluesS = JSON.stringify(colsClues);
+
+    const queryS = `resolver_nonograma(${rowsCluesS}, ${colsCluesS}, SolutionGrid)`;
+    pengine.query(queryS, (success, response) => {
+      if(success) {
+        setSolutionGrid(response['SolutionGrid']);
+      }
+    })
+  }
+
   if (!grid) {
     return null;
   }
@@ -160,17 +174,31 @@ function Game() {
         <SolutionButton
           solutionMode={showSolution}
           setSolutionMode={setShowSolution}
+          onClick={() => resolveNonograma()}
         />
       </div>
+      <div className='boards-container'>
+        <Board
+          grid={grid}
+          rowsClues={rowsClues}
+          colsClues={colsClues}
+          onClick={(i, j) => handleClick(i, j)}
+          rowsCluesState={rowsCluesState}
+          colsCluesState={colsCluesState}
+        />
+
+        {showSolution && solutionGrid && (
+          <SolutionBoard
+            gridSolution={solutionGrid}
+            grid={grid}
+            rowsN={grid.length}
+            colsN={grid[0].length}
+            revealSolution={showSolution}
+          />
+        )}
+      </div>
       
-      <Board
-        grid={grid}
-        rowsClues={rowsClues}
-        colsClues={colsClues}
-        onClick={(i, j) => handleClick(i, j)}
-        rowsCluesState={rowsCluesState}
-        colsCluesState={colsCluesState}
-      />
+
       <ToggleSwitch 
         paintedMode={isPaintedMode}
         setPaintedMode={setIsPaintedMode}

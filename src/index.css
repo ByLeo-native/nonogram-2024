@@ -50,13 +50,40 @@ body {
   background: #000;
 }
 
+.boards-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+}
+
 .board {
   display: grid;
   grid-gap: 2px; /* Spacing between squares */
   border: 1px solid #ddd; /* Light border for the board */
   border-radius: 4px; /* Rounded corners for a more modern look */
-  animation: board-appear 0.5s ease-in-out forwards;
+  opacity: 1; /* Start fully visible */
+  visibility: visible; /* Ensure the element is visible */
+  transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out; /* Smooth transition for opacity and visibility */
   margin: auto;
+  animation: board-appear 0.5s ease-in-out forwards;
+}
+
+.hide-solution-board {
+  opacity: 0; /* Fully transparent */
+  visibility: hidden; /* Hide the element */
+  transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out 0.5s; /* Delay visibility change to allow opacity transition */
+}
+
+@keyframes board-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .horizontal {
@@ -226,24 +253,56 @@ body {
 }
 
 .click-button {
-  width: 60px; /* Ancho del botón */
-  height: 60px; /* Alto del botón */
-  border-radius: 50%; /* Hace el botón redondo */
-  border: none; /* Sin bordes */
-  background-color: white; /* Color de fondo predeterminado */
-  color: white; /* Color del texto */
-  font-size: 16px; /* Tamaño de la fuente */
-  cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
-  transition: background-color 0.3s, transform 0.3s; /* Transición suave */
-  outline: none; /* Sin contorno en el enfoque */
+  position: relative; /* Para permitir el uso de pseudo-elementos posicionados */
+  width: 120px;
+  height: 60px;
+  border-radius: 8%;
+  margin: 0 0 16px 0;
+  border: none;
+  background-color: grey;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+  outline: none;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .click-button:active {
-  background-color: #0056b3; /* Color de fondo cuando está activo */
-  transform: scale(0.95); /* Efecto de presión */
+  background-color: #0056b3;
+  transform: scale(0.95);
 }
 
 .click-button.reveal-active {
-  background-color: #28a745; /* Color de fondo cuando está en modo revelar */
+  background-color: #28a745;
+}
+
+.click-button.solution-active {
+  background-color: blueviolet;
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: -16px; /* Debajo del botón */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: red;
+  transition: background-color 0.3s;
+}
+
+.status-indicator.active {
+  background-color: green;
+}
+
+.title-solution-grid {
+  background-color: blueviolet;
+  border-radius: 4px;
+  color: greenyellow;
+  font-size: 16px;
+  font-family: sans-serif;
+  font-weight: bold;
+  text-align: center;
 }
