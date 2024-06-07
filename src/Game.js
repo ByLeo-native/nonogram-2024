@@ -83,57 +83,65 @@ function Game() {
     if (waiting) {
       return;
     }
-    // Build Prolog query to make a move and get the new satisfacion status of the relevant clues.    
-    const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
-    const rowsCluesS = JSON.stringify(rowsClues);
-    const colsCluesS = JSON.stringify(colsClues);
 
-    const content = isPaintedMode ? '#' : 'X';
-    const queryS = `put("${content}", [${i},${j}], ${rowsCluesS}, ${colsCluesS}, ${squaresS}, ResGrid, RowSat, ColSat)`; // queryS = put("#",[0,1],[], [],[["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]], GrillaRes, FilaSat, ColSat)
-    setWaiting(true);
-    pengine.query(queryS, (success, response) => {
-      if (success) {
-        setGrid(response['ResGrid']);
-        updateClues(i, j, response['RowSat'], response['ColSat']);
-        /**
-         * Si se verifica las restricciones en fila y en columna en simultaneo, entonces se verifica si se resolvio el nonograma.
-         * VERIFICACION DE NONOGRAMA
-         */
-        if (response['RowSat'] === 1 && response['ColSat'] === 1) {
-          const g = JSON.stringify(response['ResGrid']).replaceAll('"_"', '_');
-          const querySS = `solve(${g}, ${rowsCluesS}, ${colsCluesS}, Solved)`;
-          pengine.query(querySS, (success, response) => {
-            if(success) {
-              if(response['Solved']) {
-                statusText = `¡Has completado el nonograma!`;
-                setWinner(statusText);
+    if(!revealMode) {
+      // Funcionamiento normal, cuando el boton revealMode esta desactivado
+      // Build Prolog query to make a move and get the new satisfacion status of the relevant clues.    
+      const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
+      const rowsCluesS = JSON.stringify(rowsClues);
+      const colsCluesS = JSON.stringify(colsClues);
+
+      const content = isPaintedMode ? '#' : 'X';
+      const queryS = `put("${content}", [${i},${j}], ${rowsCluesS}, ${colsCluesS}, ${squaresS}, ResGrid, RowSat, ColSat)`; // queryS = put("#",[0,1],[], [],[["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]], GrillaRes, FilaSat, ColSat)
+      setWaiting(true);
+      pengine.query(queryS, (success, response) => {
+        if (success) {
+          setGrid(response['ResGrid']);
+          updateClues(i, j, response['RowSat'], response['ColSat']);
+          /**
+           * Si se verifica las restricciones en fila y en columna en simultaneo, entonces se verifica si se resolvio el nonograma.
+           * VERIFICACION DE NONOGRAMA
+           */
+          if (response['RowSat'] === 1 && response['ColSat'] === 1) {
+            const g = JSON.stringify(response['ResGrid']).replaceAll('"_"', '_');
+            const querySS = `solve(${g}, ${rowsCluesS}, ${colsCluesS}, Solved)`;
+            pengine.query(querySS, (success, response) => {
+              if(success) {
+                if(response['Solved']) {
+                  statusText = `¡Has completado el nonograma!`;
+                  setWinner(statusText);
+                } else {
+                  console.log(`No esta resuelto`);
+                }
               } else {
-                console.log(`No esta resuelto`);
+                console.error(`La solicitud de solve no fue exitosa`);
               }
-            } else {
-              console.error(`La solicitud de solve no fue exitosa`);
-            }
-          });
+            });
+          }
+          setWaiting(false);
+        }
+      })
+    } else {
+      // Funcionamiento para revelar la solucion de una celda del nonograma
+      const rowsCluesS = JSON.stringify(rowsClues);
+      const colsCluesS = JSON.stringify(colsClues);
+
+      console.log(`Entro al revelar`);
+      const queryS = `consultar_celda([${i},${j}], ${rowsCluesS}, ${colsCluesS}, RevealedContent)`;
+      setWaiting(true);
+      pengine.query(queryS, (success, response) => {
+        if (success) {
+          console.log(`${response['RevealedContent']}`);
+          const newGrid = [...grid];
+          newGrid[i][j] = response['RevealedContent'];
+          setGrid(newGrid);
+        } else {
+          console.error(`Error en la consulta revelar ${response}`)
         }
         setWaiting(false);
-      }
-    })
-  }
-
-  function revealCell(i, j) {
-    const rowsCluesS = JSON.stringify(rowsClues);
-    const colsCluesS = JSON.stringify(colsClues);
-
-    const queryS = `reveal([${i},${j}], ${rowsCluesS}, ${colsCluesS}, RevealedContent)`;
-    setWaiting(true);
-    pengine.query(queryS, (success, response) => {
-      if (success) {
-        const newGrid = [...grid];
-        newGrid[i][j] = response['RevealedContent'];
-        setGrid(newGrid);
-      }
-      setWaiting(false);
-    });
+      });
+      setRevealMode(!revealMode);
+    }
   }
 
   if (!grid) {

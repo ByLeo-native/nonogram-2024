@@ -2,17 +2,12 @@
     [  
         put/8,
         solve/4,
-        check_clues/5,
-        generate_grid/3,
         resolver_nonograma/3,
         check_line/2,
-        normalizar_linea/2,
-        normalizar_grid/2,
-        consultar_celda/6
+        consultar_celda/4
     ]).
 
 :- use_module(library(lists)).
-:- use_module(library(clpfd)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -198,7 +193,7 @@ solve(Grid, RowClues, ColClues, Solved) :-
     transpose(Grid, TransposedGrid),
     check_lines(TransposedGrid, ColClues, ColsSatisfied),
     % Si tanto las restricciones en filas como en columnas se cumplen, el nonograma está resuelto.
-    %% La unica forma de que Solved de true o 1 es que se satisfagan RowsSatisfied y ColsSatisfied simultaneamente.
+    %%La unica forma de que Solved de true o 1 es que se satisfagan RowsSatisfied y ColsSatisfied simultaneamente.
     Solved is min(RowsSatisfied, ColsSatisfied).
 
 
@@ -233,7 +228,7 @@ generate_grid(Width, Height, [Row|Grid]) :-
 
 % resolver nonograma debe recibir las restricciones en fila y restricciones en columna
 % Debo obtener una grilla tal que cumple con las restricciones en fila y restricciones en columna
-
+% resolver_nonograma(+RowsClues, +ColsClues, -SolutionGrid)
 resolver_nonograma(RowsClues, ColsClues, SolutionGrid) :-
     length(RowsClues, NRows),
     length(ColsClues, NCols),
@@ -302,12 +297,10 @@ normalizar_linea([], []).
 normalizar_linea(["#" | LineTail], [ NCell | Rest]) :- NCell is "#", normalizar_linea(LineTail, Rest).
 normalizar_linea([Cell | LineTail],[ NCell | Rest]) :- Cell \= "#", NCell is "X", normalizar_linea(LineTail, Rest).
 
-
-consultar_celda([RowN, ColN], RowsClues, ColsClues, DebePintarse) :-
+consultar_celda([RowN, ColN], RowsClues, ColsClues, Cell) :-
     resolver_nonograma(RowsClues, ColsClues, SolutionGrid),
     nth0(RowN, SolutionGrid, Row),
-    nth0(ColN, Row, Cell),
-    consultar_celda_auxiliar(Cell, DebePintarse).
+    nth0(ColN, Row, Cell).
 
 consultar_celda_auxiliar("#", true).
 consultar_celda_auxiliar("X", false).
