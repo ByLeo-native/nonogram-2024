@@ -4,7 +4,7 @@
         solve/4,
         resolver_nonograma/3,
         check_line/2,
-        consultar_celda/4
+        revelar_celda/4
     ]).
 
 :- use_module(library(lists)).
@@ -117,8 +117,8 @@ check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
     Cell == "#",
     NewPaintCount is PaintCount + 1,
     ( NewPaintCount == Clue,
-      check_space(LineTail, EstaEspaciada),
-      EstaEspaciada == 1 ->
+        check_space(LineTail, EstaEspaciada),
+        EstaEspaciada == 1 ->
         % Si todas las condiciones son verdaderas, continuar con las siguientes pistas
         check_line(LineTail, CluesTail, 0, 0, LineSat)
     ;
@@ -138,22 +138,14 @@ check_line([Cell|LineTail], [Clue|CluesTail], PaintCount, _, LineSat) :-
     % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
     check_line(LineTail, [Clue|CluesTail], NewPaintCount, 1, LineSat).
 
-
-check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :-
-    % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
-    Clue > 0, 
-    Cell == "X", 
-    % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
-    check_line(LineTail, [Clue|CluesTail], 0, 1, LineSat).
-
-
 % Si quedan elementos en la línea y restricciones por verificar.
 check_line([Cell|LineTail], [Clue|CluesTail], _, _, LineSat) :-
     % Verificar si el primer elemento de la línea es '#' (pintado) o 'X' (no pintado).
-    Clue > 0,
-    var(Cell), 
+    Clue > 0, 
+    Cell \== "#", 
     % Si no se alcanzó la restricción actual, continuar verificando con la misma restricción actual.
     check_line(LineTail, [Clue|CluesTail], 0, 1, LineSat).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%% Contemplacion para cuando la restriccion de la linea es 0
@@ -167,18 +159,14 @@ check_line([], [0|_], 0, _, 1).
 check_line([Cell|_], [0|_], _, _, LineSat) :- Cell == "#", LineSat = 0.
 
 % Caso recursivo: si la restricción actual es 0 y la línea no está vacía,
-% y si la celda es marcada con no-pintada entonces se verifica recursivamente la línea sin modificar la restricción.
-check_line([Cell|LineTail], [0|_], PaintCount, _, LineSat) :- Cell == "X", check_line(LineTail, [0], PaintCount, _, LineSat).
-
-% Caso recursivo: si la restriccion actual es 0 y la línea no está vacía,
-% y si la celda esta vacía (no instanciada) entonces se verifica recursivamente la línea sin modificar la restricción.
-check_line([Cell|LineTail], [0|_], PaintCount, _, LineSat) :- var(Cell), check_line(LineTail, [0], PaintCount, _, LineSat).
+% y si la celda es marcada con no-pintada o la celda esta vacía (no instanciada) entonces se verifica recursivamente la línea sin modificar la restricción.
+check_line([Cell|LineTail], [0|_], PaintCount, _, LineSat) :- Cell \== "#", check_line(LineTail, [0], PaintCount, _, LineSat).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% transpose %%%%%%%%%%%% Verificado que funciona
 
 transpose([[]|_], []).
 transpose(Matrix, [Row|Rows]) :- transpose_1st_col(Matrix, Row, RestMatrix),
-                                 transpose(RestMatrix, Rows).
+    transpose(RestMatrix, Rows).
 transpose_1st_col([], [], []).
 transpose_1st_col([[H|T]|Rows], [H|Hs], [T|Ts]) :- transpose_1st_col(Rows, Hs, Ts).
 
@@ -259,7 +247,7 @@ pack([CheckLine|Lines], [Clues|CluesTail], [line(Count, CheckLine, Clues)|Result
 % add_space/2 y force_space/2: Manejan los espacios entre bloques de celdas llenas.
 % check_part/3: Verifica si una secuencia de celdas llenas cumple con una parte de las restricciones.
 
-check_line([],[]) :- !.
+check_line([],[]).
 check_line(Line, [Part|Rest]) :-
     Rest \= [],
     add_space(Line, Line2),
@@ -274,8 +262,7 @@ check_line(Line, [Part|[]]) :-
 
 check_line([], [0|_]).
 check_line([Cell|_], [0|_]) :- Cell == "#", false.
-check_line([Cell|LineTail], [0|_]) :- Cell == "X", check_line(LineTail, [0]).
-check_line([Cell|LineTail], [0|_]) :- var(Cell), check_line(LineTail, [0]).
+check_line([Cell|LineTail], [0|_]) :- Cell \== "#", check_line(LineTail, [0]).
 
 force_space(["X"|Line],Line).
 
@@ -289,18 +276,7 @@ check_part(["#"|Line], RestLine, N) :-
     N1 is N - 1,
     check_part(Line, RestLine, N1).
 
-normalizar_grid([Line | LinesTail], [NormalizedLine | NormalizedLinesTail]) :-
-    normalizar_linea(Line, NormalizedLine),
-    normalizar_grid(LinesTail, NormalizedLinesTail).
-
-normalizar_linea([], []).
-normalizar_linea(["#" | LineTail], [ NCell | Rest]) :- NCell is "#", normalizar_linea(LineTail, Rest).
-normalizar_linea([Cell | LineTail],[ NCell | Rest]) :- Cell \= "#", NCell is "X", normalizar_linea(LineTail, Rest).
-
-consultar_celda([RowN, ColN], RowsClues, ColsClues, Cell) :-
+revelar_celda([RowN, ColN], RowsClues, ColsClues, Cell) :-
     resolver_nonograma(RowsClues, ColsClues, SolutionGrid),
     nth0(RowN, SolutionGrid, Row),
     nth0(ColN, Row, Cell).
-
-consultar_celda_auxiliar("#", true).
-consultar_celda_auxiliar("X", false).

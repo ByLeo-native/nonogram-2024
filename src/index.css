@@ -259,8 +259,7 @@ body {
   border-radius: 8%;
   margin: 0 0 16px 0;
   border: none;
-  background-color: grey;
-  color: white;
+  
   font-size: 16px;
   cursor: pointer;
   transition: background-color 0.3s, transform 0.3s;
@@ -268,17 +267,24 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
+.lock-button {
+  background-color: grey;
+  color: white;
+}
+
 .click-button:active {
   background-color: #0056b3;
   transform: scale(0.95);
 }
 
-.click-button.reveal-active {
-  background-color: #28a745;
-}
-
 .click-button.solution-active {
   background-color: blueviolet;
+  color: white;
+}
+
+.click-button.reveal-active {
+  background-color: #28a745;
+  color: white;
 }
 
 .status-indicator {
@@ -305,4 +311,9 @@ body {
   font-family: sans-serif;
   font-weight: bold;
   text-align: center;
+}
+
+.block-grid {
+  opacity: 0.5;
+  cursor: no-drop;
 }

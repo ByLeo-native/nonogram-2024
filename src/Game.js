@@ -21,10 +21,11 @@ function Game() {
   const [isPaintedMode, setIsPaintedMode] = useState(true);
   const [winner, setWinner] = useState(null);
 
-
+  const [helpButtons, setHelpButtons] = useState(false);
   const [revealMode, setRevealMode] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
   const [solutionGrid, setSolutionGrid] = useState(null);
+  const [statusText, setStatusText] = useState('Keep playing!');
 
   useEffect(() => {
     // Creation of the pengine server instance.    
@@ -49,9 +50,9 @@ function Game() {
          * Se utiliza la respuesta de la primera peticion en vez de las constantes declaradas porque falla.
          */
         const g = JSON.stringify(response['Grid']).replaceAll('"_"', '_');
-        const rClues = JSON.stringify(response['RowClues']);
-        const cClues = JSON.stringify(response['ColumClues']);
-        const querySS = `check_clues(${g}, ${rClues}, ${cClues}, StatusOfRows, StatusOfCols)`;
+        const rCluesS = JSON.stringify(response['RowClues']);
+        const cCluesS = JSON.stringify(response['ColumClues']);
+        const querySS = `check_clues(${g}, ${rCluesS}, ${cCluesS}, StatusOfRows, StatusOfCols)`;
         setWaiting(true);
         pengine.query(querySS, (success, response) => {
           if(success) {
@@ -63,6 +64,28 @@ function Game() {
           }
           setWaiting(false);
         })
+        
+        // Ver si el nonograma esta inicialmente resuelto
+        const querySSS = `solve(${g}, ${rCluesS}, ${cCluesS}, Solved)`;
+        pengine.query(querySSS, (success, response) => {
+          if(success) {
+            if(response['Solved']) {
+              setStatusText(``);
+              setWinner(`¡Has completado el nonograma!`);
+            }
+          } else {
+            console.error(`La solicitud de solve no fue exitosa`);
+          }
+        });
+        
+        // RESOLVER NONOGRAMA: 
+        const querySSSS = `resolver_nonograma(${rCluesS}, ${cCluesS}, SolutionGrid)`;
+        pengine.query(querySSSS, (success, response) => {
+          if(success) {
+            setSolutionGrid(response['SolutionGrid']);
+          }
+        })
+        setHelpButtons(true);
       }
     });
   }
@@ -84,13 +107,12 @@ function Game() {
     if (waiting) {
       return;
     }
-
+    // En caso de que se este mostrando la solución de la grilla, entonces no se permitira la interacción
     if(showSolution) {
       return;
     } else {
-      if(!revealMode) {
-        // Funcionamiento normal, cuando el boton revealMode esta desactivado
-        // Build Prolog query to make a move and get the new satisfacion status of the relevant clues.    
+      if(!(helpButtons && revealMode)) {
+        // Funcionamiento normal, cuando el boton revealMode esta desactivado  
         const squaresS = JSON.stringify(grid).replaceAll('"_"', '_'); // Remove quotes for variables. squares = [["X",_,_,_,_],["X",_,"X",_,_],["X",_,_,_,_],["#","#","#",_,_],[_,_,"#","#","#"]]
         const rowsCluesS = JSON.stringify(rowsClues);
         const colsCluesS = JSON.stringify(colsClues);
@@ -112,7 +134,7 @@ function Game() {
               pengine.query(querySS, (success, response) => {
                 if(success) {
                   if(response['Solved']) {
-                    statusText = `¡Has completado el nonograma!`;
+                    setStatusText(`¡Has completado el nonograma!`);
                     setWinner(statusText);
                   } else {
                     console.log(`No esta resuelto`);
@@ -126,12 +148,11 @@ function Game() {
           }
         })
       } else {
-        // Funcionamiento para revelar la solucion de una celda del nonograma
+        // REVELAR CELDA: Funcionamiento para revelar la solucion de una celda del nonograma
         const rowsCluesS = JSON.stringify(rowsClues);
         const colsCluesS = JSON.stringify(colsClues);
   
-        console.log(`Entro al revelar`);
-        const queryS = `consultar_celda([${i},${j}], ${rowsCluesS}, ${colsCluesS}, RevealedContent)`;
+        const queryS = `revelar_celda([${i},${j}], ${rowsCluesS}, ${colsCluesS}, RevealedContent)`;
         setWaiting(true);
         pengine.query(queryS, (success, response) => {
           if (success) {
@@ -149,36 +170,22 @@ function Game() {
     }
   }
 
-
-  function resolveNonograma() {
-    const rowsCluesS = JSON.stringify(rowsClues);
-    const colsCluesS = JSON.stringify(colsClues);
-
-    const queryS = `resolver_nonograma(${rowsCluesS}, ${colsCluesS}, SolutionGrid)`;
-    pengine.query(queryS, (success, response) => {
-      if(success) {
-        setSolutionGrid(response['SolutionGrid']);
-      }
-    })
-  }
-
   if (!grid) {
     return null;
   }
   
-  let statusText = 'Keep playing!';
-  
   return (
     <div className="game">
       <div className="container">
-        <RevealButton  // <-- Usa el nuevo componente RevealButton
+        <RevealButton
           revealMode={revealMode}
           setRevealMode={setRevealMode}
+          helpsActive={helpButtons}
         />
         <SolutionButton
           solutionMode={showSolution}
           setSolutionMode={setShowSolution}
-          onClick={() => resolveNonograma()}
+          helpsActive={helpButtons}
         />
       </div>
       <div className='boards-container'>
@@ -189,14 +196,12 @@ function Game() {
           onClick={(i, j) => handleClick(i, j)}
           rowsCluesState={rowsCluesState}
           colsCluesState={colsCluesState}
+          blockGrid={showSolution}
         />
 
         {showSolution && solutionGrid && (
           <SolutionBoard
             gridSolution={solutionGrid}
-            grid={grid}
-            rowsN={grid.length}
-            colsN={grid[0].length}
             revealSolution={showSolution}
           />
         )}

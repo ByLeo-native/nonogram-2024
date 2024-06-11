@@ -2,14 +2,14 @@ import React from 'react';
 import Square from './Square';
 import Clue from './Clue';
 
-function Board({ grid, rowsClues, colsClues, onClick, rowsCluesState, colsCluesState}) {
+function Board({ grid, rowsClues, colsClues, onClick, rowsCluesState, colsCluesState, blockGrid}) {
     const numOfRows = grid.length;
     const numOfCols = grid[0].length;
 
 
 
     return (
-        <div className="vertical">
+        <div className={`vertical ${blockGrid ? 'block-grid' : ''}`}>
             <div
                 className="colClues"
                 style={{

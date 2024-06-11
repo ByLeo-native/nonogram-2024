@@ -2,9 +2,9 @@ import './index.css';
 import React from 'react';
 import Square from './Square';
 
-function SolutionBoard({ gridSolution, grid, revealSolution}) {
-    const numOfRows = grid.length;
-    const numOfCols = grid[0].length;
+function SolutionBoard({ gridSolution, revealSolution}) {
+    const numOfRows = gridSolution.length;
+    const numOfCols = gridSolution[0].length;
 
     return (
         <div>
